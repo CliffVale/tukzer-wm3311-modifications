@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tukzer Dashboard</title>
+<style>
+:root {
+  --bg: #0f1923;
+  --card: #1a2d3d;
+  --accent: #00e5ff;
+  --green: #00e676;
+  --red: #ff5252;
+  --yellow: #ffd740;
+  --text: #e0e0e0;
+  --dim: #78909c;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--text); padding:20px; }
+.header { display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; flex-wrap:wrap; gap:10px; }
+h1 { font-size:1.8rem; background:linear-gradient(135deg,var(--accent),var(--green));
+     -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.subtitle { color:var(--dim); font-size:0.9rem; margin-top:4px; }
+.header-right { text-align:right; font-size:0.85rem; color:var(--dim); }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; }
+.card { background:var(--card); border-radius:12px; padding:20px; border:1px solid rgba(255,255,255,0.05); }
+.card h2 { font-size:1rem; color:var(--accent); margin-bottom:12px; text-transform:uppercase; letter-spacing:1px; }
+.stat-row { display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.03); font-size:0.9rem; }
+.stat-row:last-child { border:none; }
+.stat-label { color:var(--dim); }
+.stat-value { font-weight:500; }
+.stat-value.green { color:var(--green); }
+.stat-value.red { color:var(--red); }
+.stat-value.yellow { color:var(--yellow); }
+.bar-container { background:rgba(255,255,255,0.05); border-radius:4px; height:8px; margin:8px 0; overflow:hidden; }
+.bar-fill { height:100%; border-radius:4px; transition:width 0.5s; }
+.bar-fill.green { background:var(--green); }
+.bar-fill.yellow { background:var(--yellow); }
+.bar-fill.red { background:var(--red); }
+.service { display:flex; justify-content:space-between; align-items:center; padding:8px 12px; 
+           margin:4px 0; border-radius:6px; background:rgba(255,255,255,0.03); }
+.service-name { font-weight:500; }
+.service-status { font-size:0.8rem; padding:2px 8px; border-radius:4px; }
+.service-status.up { background:rgba(0,230,118,0.15); color:var(--green); }
+.service-status.down { background:rgba(255,82,82,0.15); color:var(--red); }
+.actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+.btn { padding:8px 16px; border:none; border-radius:6px; font-size:0.85rem; cursor:pointer;
+       font-weight:500; transition:all 0.2s; text-decoration:none; display:inline-block; }
+.btn-primary { background:var(--accent); color:#000; }
+.btn-danger { background:var(--red); color:#fff; }
+.btn-secondary { background:rgba(255,255,255,0.1); color:var(--text); }
+.btn-sm { padding:4px 10px; font-size:0.8rem; }
+.log-box { background:#000; border-radius:6px; padding:12px; font-family:monospace; font-size:0.8rem; 
+            max-height:200px; overflow-y:auto; margin-top:8px; }
+.log-line { color:var(--dim); padding:1px 0; }
+#update-time { color:var(--dim); font-size:0.8rem; margin-top:16px; text-align:center; }
+@media(max-width:600px) { .grid { grid-template-columns:1fr; } }
+.status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+.status-dot.up { background:var(--green); }
+.status-dot.down { background:var(--red); }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>⬡ Tukzer WM3311</h1>
+    <div class="subtitle">4G LTE dongle &bull; Android 4.4.4 &bull; MSM8916</div>
+  </div>
+  <div class="header-right" id="uptime-display">Loading...</div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <h2>System</h2>
+    <div class="stat-row"><span class="stat-label">CPU</span><span class="stat-value" id="cpu">-</span></div>
+    <div class="bar-container"><div class="bar-fill green" id="cpu-bar" style="width:0%"></div></div>
+    <div class="stat-row"><span class="stat-label">Memory</span><span class="stat-value" id="mem">-</span></div>
+    <div class="bar-container"><div class="bar-fill yellow" id="mem-bar" style="width:0%"></div></div>
+    <div class="stat-row"><span class="stat-label">/system</span><span class="stat-value" id="disk-sys">-</span></div>
+    <div class="stat-row"><span class="stat-label">/data</span><span class="stat-value" id="disk-data">-</span></div>
+    <div class="stat-row"><span class="stat-label">Processes</span><span class="stat-value" id="procs">-</span></div>
+    <div class="stat-row"><span class="stat-label">Load Avg</span><span class="stat-value" id="load">-</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Network</h2>
+    <div class="stat-row"><span class="stat-label">IP (RNDIS)</span><span class="stat-value" id="ip">-</span></div>
+    <div class="stat-row"><span class="stat-label">WiFi SSID</span><span class="stat-value" id="wifi">-</span></div>
+    <div class="stat-row"><span class="stat-label">SIM 1</span><span class="stat-value" id="sim1">-</span></div>
+    <div class="stat-row"><span class="stat-label">SIM 2</span><span class="stat-value" id="sim2">-</span></div>
+    <div class="stat-row"><span class="stat-label">Baseband</span><span class="stat-value" id="baseband" style="font-size:0.75rem;">-</span></div>
+  </div>
+
+  <div class="card">
+    <h2>Services</h2>
+    <div id="services"></div>
+  </div>
+
+  <div class="card">
+    <h2>Quick Actions</h2>
+    <div class="actions">
+      <button class="btn btn-danger" onclick="execCmd('reboot')">Reboot</button>
+      <button class="btn btn-primary" onclick="execCmd('ssh_restart')">Restart SSH</button>
+      <button class="btn btn-secondary" onclick="execCmd('ftp_restart')">Restart FTP</button>
+      <button class="btn btn-secondary" onclick="execCmd('wg_status')">WG Status</button>
+    </div>
+    <div id="action-result" style="margin-top:10px;font-size:0.85rem;color:var(--dim);"></div>
+  </div>
+
+  <div class="card" style="grid-column:1/-1;">
+    <h2>System Log</h2>
+    <div id="log" class="log-box"><div class="log-line">Waiting...</div></div>
+    <div class="actions" style="margin-top:8px;">
+      <button class="btn btn-sm btn-secondary" onclick="fetchLog()">Refresh</button>
+      <button class="btn btn-sm btn-secondary" onclick="document.getElementById('log').innerHTML=''">Clear</button>
+    </div>
+  </div>
+</div>
+
+<div id="update-time">Updating...</div>
+
+<script>
+const API = 'http://' + location.hostname + ':8080/cgi-bin/api.sh';
+
+async function getJSON(cmd) {
+  try {
+    const res = await fetch(API + '?cmd=' + encodeURIComponent(cmd));
+    return await res.json();
+  } catch(e) { return {error: e.message}; }
+}
+
+async function loadStatus() {
+  const d = await getJSON('status');
+  if (d.error) { document.getElementById('uptime-display').textContent = 'API Error: '+d.error; return; }
+
+  document.getElementById('uptime-display').textContent = 'Uptime: ' + (d.uptime || '-');
+  document.getElementById('load').textContent = d.load || '-';
+  document.getElementById('ip').textContent = d.ip || '-';
+  
+  // CPU (approx from load)
+  const loadVal = d.load ? parseFloat(d.load.split(',')[0]) || 0 : 0;
+  const cpuPct = Math.min(100, Math.round(loadVal * 25));
+  document.getElementById('cpu').textContent = cpuPct + '%';
+  document.getElementById('cpu-bar').style.width = cpuPct + '%';
+  document.getElementById('cpu-bar').className = 'bar-fill ' + (cpuPct > 80 ? 'red' : cpuPct > 50 ? 'yellow' : 'green');
+
+  // Memory
+  if (d.mem_total && d.mem_avail) {
+    const used = d.mem_total - d.mem_avail;
+    const pct = Math.round(used / d.mem_total * 100);
+    document.getElementById('mem').textContent = Math.round(used/1024) + '/' + Math.round(d.mem_total/1024) + 'MB (' + pct + '%)';
+    document.getElementById('mem-bar').style.width = pct + '%';
+    document.getElementById('mem-bar').className = 'bar-fill ' + (pct > 80 ? 'red' : pct > 60 ? 'yellow' : 'green');
+  }
+
+  // Disk
+  if (d.disk_sys) {
+    const parts = d.disk_sys.split(',');
+    document.getElementById('disk-sys').textContent = parts[2] + ' free / ' + parts[1] + ' used';
+  }
+  if (d.disk_data) {
+    const parts = d.disk_data.split(',');
+    document.getElementById('disk-data').textContent = parts[2] + ' free / ' + parts[1] + ' used';
+  }
+
+  document.getElementById('procs').textContent = d.procs || '-';
+  document.getElementById('wifi').textContent = d.wifi || 'N/A';
+  document.getElementById('sim1').textContent = d.sim1 || 'No SIM';
+  document.getElementById('sim2').textContent = d.sim2 || 'No SIM';
+  document.getElementById('baseband').textContent = d.baseband || '-';
+
+  // Services
+  const services = [
+    {name:'SSH (2222)', key:'ssh'},
+    {name:'FTP (21)', key:'ftp'},
+    {name:'WireGuard', key:'wg'},
+    {name:'ADB', key:'adb'},
+    {name:'Web UI (80)', key:'web', val:1},
+    {name:'API (8080)', key:'api', val:1}
+  ];
+  document.getElementById('services').innerHTML = services.map(s => {
+    const up = s.val !== undefined ? s.val : d[s.key];
+    return '<div class="service"><span class="service-name"><span class="status-dot '+(up?'up':'down')+'"></span>'+s.name+'</span>'+
+           '<span class="service-status '+(up?'up':'down')+'">'+(up?'up ✓':'down ✗')+'</span></div>';
+  }).join('');
+
+  document.getElementById('update-time').textContent = 'Updated: ' + new Date().toLocaleTimeString();
+}
+
+async function fetchLog() {
+  const d = await getJSON('log');
+  if (d.log) {
+    document.getElementById('log').innerHTML = d.log.split('\n').filter(l=>l.trim()).map(l=>'<div class="log-line">'+escapeHtml(l)+'</div>').join('');
+  }
+}
+
+function escapeHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+async function execCmd(action) {
+  const result = document.getElementById('action-result');
+  result.textContent = 'Running...';
+  let cmd = '';
+  switch(action) {
+    case 'reboot': cmd = 'sleep 1; reboot'; break;
+    case 'ssh_restart': cmd = 'killall -9 dropbearmulti 2>/dev/null; sleep 1; /system/xbin/dropbearmulti dropbear -p 2222 -E > /tmp/dropbear.log 2>&1 &'; break;
+    case 'ftp_restart': cmd = 'killall tcpsvd 2>/dev/null; sleep 1; /system/xbin/busybox tcpsvd -vE 0.0.0.0 21 /system/xbin/busybox ftpd -w -A /data/shared &'; break;
+    case 'wg_status': cmd = '/system/xbin/wg show'; break;
+  }
+  if (cmd) {
+    const d = await getJSON('exec:' + cmd);
+    result.textContent = d.result ? d.result.substring(0, 300) : 'Done';
+  }
+  setTimeout(loadStatus, 2000);
+}
+
+// Auto-refresh
+loadStatus();
+fetchLog();
+setInterval(loadStatus, 10000);
+setInterval(fetchLog, 60000);
+</script>
+</body>
+</html>

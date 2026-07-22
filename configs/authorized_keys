@@ -1,0 +1,4 @@
+# SSH public keys for root@tukzer
+# Add your own keys below - one per line
+# ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA... your@email
+# ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... your@email
